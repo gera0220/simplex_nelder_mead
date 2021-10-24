@@ -1,8 +1,13 @@
 %f = @(x) 100 * (x {2} - x {1} .^ 2) .^ 2 + (1 - x {1}) .^ 2
+%x{1}{1} = -1.2;
+%x{1}{2} = 0;
 
-function [xmin, fmin, maxit] = simplex(f, A, alpha, beta, gamma, maxit)
+# Se debe de declarar primero el punto inicial, siendo este la línea 2 y 3.
+# El punto inicial es el parámetro A.
+
+function [] = simplex_gerardo(f, alpha, beta, gamma, epsilon, maxit, A)
     feval = [];
-    contador = 1;
+    contador = 0;
     N = ndims(A);
     delta = alpha * [((sqrt(N + 1) + N - 1) / (N * sqrt(2))), ((sqrt(N + 1) - 1) / (N * sqrt(2)))];
     for i = 2:(N + 1)
@@ -15,14 +20,13 @@ function [xmin, fmin, maxit] = simplex(f, A, alpha, beta, gamma, maxit)
         endfor
     endfor
     do
-        %printf("Este es el %d simplex: ", contador), disp(A)
+        %printf("Este es el %d simplex: ", contador + 1), disp(A)
         for i = 1:length(A)
             feval(i) = f(A{i});
         endfor
         fmax = max(feval);
         fmin = min(feval);
         fg = max(feval(feval ~= max(feval)));
-        %feval
         k = 0;
         do 
             k++;
@@ -49,10 +53,19 @@ function [xmin, fmin, maxit] = simplex(f, A, alpha, beta, gamma, maxit)
             A{k} = contraccion2(beta, xc, A, k);
         endif
         contador += 1;
-    until (contador > maxit)
-    A{k}
-    f(A{k})
-    maxit
+    until (contador > maxit || Q(A, xc, f) < epsilon)
+    xmin = A{m};
+    fmin = f(A{m});
+    if(contador > maxit)
+        printf("Búsqueda fallida. Se llegó al máximo de iteraciones.\n");
+    elseif(Q(A, xc, f) > epsilon)
+        printf("Búsqueda fallida. No se llegó al epsilon dado.\n");
+    else
+        printf("Iteraciones: %d\n", contador);
+        printf("El punto óptimo es: \n");
+        disp(xmin);
+        printf("fmin = %f\n", fmin);
+    endif
 endfunction
 
 function [xc] = centroide(x, k)
@@ -70,6 +83,15 @@ function [suma] = suma_excepcion(x, coord, k)
             suma += 1/(N - 1) * x{i}{coord};
         endif
     endfor
+endfunction
+
+function [Q] = Q(x, xc, f)
+    suma = 0;
+    N = length(x);
+    for i = 1 : N
+            suma += ((f(x{i}) - f(xc{1})) .^ 2) / N;
+    endfor
+    Q = sqrt(suma);
 endfunction
 
 function [xr] = reflejado(x, xc, k)
@@ -99,5 +121,3 @@ function [xnew] = contraccion2(beta, xc, x, k)
         xnew{j} = (1 + beta) * xc{1}{j} - beta * x{k}{j};
     endfor
 endfunction
-            
-            
