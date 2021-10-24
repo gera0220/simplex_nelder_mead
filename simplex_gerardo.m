@@ -1,6 +1,6 @@
 %f = @(x) 100 * (x {2} - x {1} .^ 2) .^ 2 + (1 - x {1}) .^ 2
 
-function [xmin, fmin] = simplex(f, A, alpha, maxit)
+function [xmin, fmin, maxit] = simplex(f, A, alpha, beta, gamma, maxit)
     feval = [];
     contador = 1;
     N = ndims(A);
@@ -20,24 +20,39 @@ function [xmin, fmin] = simplex(f, A, alpha, maxit)
             feval(i) = f(A{i});
         endfor
         fmax = max(feval);
-        if(exist("k") && max(feval) == f(A{k}))
-            fmax = max(feval(feval ~= max(feval)));
-        endif
+        fmin = min(feval);
+        fg = max(feval(feval ~= max(feval)));
+        %feval
         k = 0;
         do 
             k++;
         until (feval(k) == fmax)
+        m = 0;
+        do 
+            m++;
+        until(feval(m) == fmin)
+        n = 0;
+        do 
+            n++;
+        until(feval(n) == fg)
+        xh = A{k};
+        xl = A{m};
+        xg = A(n);
         xc = centroide(A, k);
-        A{k} = nuevo_punto(A, xc, k);
+        xr = reflejado(A, xc, k);
+        A{k} = xr;
+        if(f(xr) < f(A{m}))
+            A{k} = expansion(gamma, xc, A, k);
+        elseif(f(xr) >= f(A{k}))
+            A{k} = contraccion1(beta, xc, A, k);
+        elseif(f(A{n}) < f(xr) && f(xr) < f(A{k}))
+            A{k} = contraccion2(beta, xc, A, k);
+        endif
         contador += 1;
     until (contador > maxit)
-    fmin = min(feval);
-    k = 0;
-    do
-        k++;
-    until(feval(k) == fmin)
-    xmin = A{k};
-    fmin = min(feval);
+    A{k}
+    f(A{k})
+    maxit
 endfunction
 
 function [xc] = centroide(x, k)
@@ -52,18 +67,37 @@ function [suma] = suma_excepcion(x, coord, k)
     N = length(x);
     for i = 1 : N
         if(k != i)
-            suma += 0.5 * x{i}{coord};
+            suma += 1/(N - 1) * x{i}{coord};
         endif
     endfor
 endfunction
 
-function [xnew] = nuevo_punto(x, xc, k)
+function [xr] = reflejado(x, xc, k)
     N = ndims(x);
     for j = 1:N
-        xnew{j} = 2 * xc{1}{j} - x{k}{j};
+        xr{j} = 2 * xc{1}{j} - x{k}{j};
     endfor
 endfunction
 
+function [xnew] = expansion(gamma, xc, x, k)
+    N = ndims(x);
+    for j = 1:N
+        xnew{j} = (1 + gamma) * xc{1}{j} - gamma * x{k}{j};
+    endfor
+endfunction
 
+function [xnew] = contraccion1(beta, xc, x, k)
+    N = ndims(x);
+    for j = 1:N
+        xnew{j} = (1 - beta) * xc{1}{j} + beta * x{k}{j};
+    endfor
+endfunction
+
+function [xnew] = contraccion2(beta, xc, x, k)
+    N = ndims(xc);
+    for j = 1:N
+        xnew{j} = (1 + beta) * xc{1}{j} - beta * x{k}{j};
+    endfor
+endfunction
             
             
